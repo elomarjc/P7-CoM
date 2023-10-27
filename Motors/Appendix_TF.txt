@@ -1,0 +1,74 @@
+\section{MatLab TF Calculator} \label{app:MATLAB_TF_Calculator}
+
+\subsection{Code}
+\begin{verbatim}
+%% This file can compute the values of a TF with a leading real pole that presents a ramp-like output
+% (step input for a TF with pole at s=0)
+
+clear all 
+close all
+clc
+
+% Ramp values (remember to use SI units):
+m = 0.32; % Slope of steady-state ramp
+n = -0.19;   % Y-axis intercept 
+V_in = 8.24*5/255; % Applied input size
+
+% Calculations ------------------------------------------------------
+syms s A B V
+disp("The ramp response should follow the formula:");
+G = 1/(s^2*(A*s+B));
+alpha = ilaplace(G*V);
+
+V = V_in;
+B = V/m;
+A = (-n)*B^2/V;
+
+disp("And the TF is:");
+s  = tf('s');
+G = (1/B)/(A/B*s+1)/s
+
+
+
+%Plotting
+
+tau = A/B;
+t = linspace(0,5*tau,1000);
+x = m*t;
+[y,t] = step(G*V,t);
+figure;
+hold on; grid on;
+xlim([0 2.5])
+ylim([-0.4+min(y) 0.6+max(y)])
+
+plot(t,y,'b');
+plot(t,m*t+n,'r');
+
+\end{verbatim}
+
+\subsection{Explanation}
+This MATLAB file computes the gain and time constant of a final transfer function (normal TF * input) standard form seen in equation \ref{eq:Standard_Form_1storder_Damp_TF}. Therefore, it can only compute overdamped first order, second or thrid order systems responding to a ramp, step or impulse input respectively.
+
+\begin{equation} \label{eq:Standard_Form_1storder_Damp_TF}
+        G = \frac{K}{s^2(s \cdot \tau + 1)}V
+\end{equation}
+
+These TF resemble a line in steady state. The properties m and n of this line (equation \ref{eq:Standard_Form_1storder_Damp_TF2}) are used to compute the gain and time constant of the system. For doing so, equations \ref{eq:ServoTransferCalc6} and \ref{eq:ServoTransferCalc4} are used.
+
+\begin{equation} \label{eq:Standard_Form_1storder_Damp_TF2}
+        Y = n + m \cdot x
+\end{equation}
+
+\begin{equation} \label{eq:ServoTransferCalc6}
+    K = \frac{m}{V}
+\end{equation}
+
+\begin{equation} \label{eq:ServoTransferCalc4}
+    \tau = \frac{|n|}{K \cdot V}
+\end{equation}
+
+This equations have been obtained by applying the inverse Laplace transform to equation \ref{eq:Standard_Form_1storder_Damp_TF}, seen in equation (\ref{eq:ServoTransferCalc5}). Then, m and n where extracted from it and then isolated for $K$ and $\tau$.
+
+\begin{equation} \label{eq:ServoTransferCalc5}
+    x=(\frac{t}{B}-\frac{A}{B^2}+\frac{A \cdot e^{-\frac{B}{A}t}}{B^2})V
+\end{equation}
