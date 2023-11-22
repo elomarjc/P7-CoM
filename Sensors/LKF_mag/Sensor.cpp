@@ -25,13 +25,68 @@ void Sensor::Initialize(int pin_SDA,int pin_scl){
     }
 }
 
+// Iterate through the arrays to find max and min values
 
+  void Sensor::get_Max_Min(float* samples, int size, float* max, float* min){
+    *max = samples[0];
+    *min = samples[0];
+    for (int i = 0; i < size; i++) {
+        // Compare elements from all arrays
+        if (samples[i] > *max) {
+            *max = samples[i];
+        }
+        if (samples[i] < *min) {
+            *min = samples[i];
+        }
+   }
+  }
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
+
+void Sensor::Calibrate_magnetometer(){
+	Serial.println("Starting calibration, move the device around all axis for at least 30 seconds");
+  int test_duration_ms = 30000;
+  int sample_delay = 100;
+	Serial.print("expected array size:");
+  Serial.println(test_duration_ms / sample_delay);
+	float x_values[300], y_values[300], z_values[300];
+	unsigned int start_time = millis();
+  for(int i = 0; i < test_duration_ms / sample_delay; i++)
+	{
+    Update_Measurements();
+		x_values[i] = magn_meas(0);
+		y_values[i] = magn_meas(1);
+		z_values[i] = magn_meas(2);
+		delay(sample_delay);
+	}
+  int size = sizeof(x_values) / sizeof(x_values[0]);
+  float max_X, min_X;
+  get_Max_Min(x_values, size, &max_X, &min_X);
+  float max_Y, min_Y;
+  get_Max_Min(y_values, size, &max_Y, &min_Y);
+  float max_Z, min_Z;
+  get_Max_Min(z_values, size, &max_Z, &min_Z);
+	float offset_x = (max_X + min_X) / 2;
+	float offset_y = (max_Y + min_Y) / 2;
+	float offset_z = (max_Z + min_Z) / 2;
+	float avg_delta_x = (max_X - min_X) / 2;
+	float avg_delta_y = (max_Y - min_Y) / 2;
+	float avg_delta_z = (max_Z - min_Z) / 2;
+	float avg_delta = (avg_delta_x + avg_delta_y + avg_delta_z) / 3;
+	float scale_x = (float)avg_delta / avg_delta_x;
+	float scale_y = (float)avg_delta / avg_delta_y;
+	float scale_z = (float)avg_delta / avg_delta_z;
+	// Set Calibration
+	magn_hard_iron = {offset_x, offset_y, offset_z};
+	magn_soft_iron = {scale_x, scale_y, scale_z};
+	Serial.println("Calibration has been set");
+}
+
 
 void Sensor::Update(){
 
   this->Update_Measurements();
+  this->Offset_corrections();
   this->Filter_Measurements();
   this->Compute_axis();
   this->Compute_Euler_Angles();
@@ -41,30 +96,29 @@ void Sensor::Compute_axis(){
   axis_z_accel = -Normalize(accel_meas_filtered);
   axis_y_mix = vector_product(axis_z_accel,axis_x_mag);
 }
-
+void Sensor::Offset_corrections(){
+  accel_meas -= accel_offset;
+  gyro_meas -= gyro_offset;
+  magn_meas(0) = (magn_meas(0) - magn_hard_iron(0)) * magn_soft_iron(0);
+  magn_meas(1) = (magn_meas(1) - magn_hard_iron(1)) * magn_soft_iron(1);
+  magn_meas(2) = (magn_meas(2) - magn_hard_iron(2)) * magn_soft_iron(2);
+  //magn_meas = Normalize(magn_meas);
+}
 void Sensor::Update_Measurements(){
   if (gatherer.accelUpdate() == 0) {
     accel_meas = {gatherer.accelX(),gatherer.accelY(),gatherer.accelZ()};
-    accel_meas -= accel_offset; 
+     
   }
   
 
   
   if (gatherer.gyroUpdate() == 0) {
     gyro_meas = {-gatherer.gyroX(),-gatherer.gyroY(),-gatherer.gyroZ()}; // Minus make it follow convention: angles increase counter clockwise
-    gyro_meas -= gyro_offset;
+    
   }
   
-  static bool first_round = true;
   if (gatherer.magUpdate() == 0) {
     magn_meas = {gatherer.magX(),gatherer.magY(),gatherer.magZ()};
-    magn_meas = Normalize(magn_meas);
-
-    if(first_round){
-      first_round = false;
-      magn_offset += magn_meas;
-    }
-    magn_meas -= magn_offset;
   }  
 
 
