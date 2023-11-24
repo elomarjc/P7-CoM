@@ -34,7 +34,7 @@ void POT::setVoltageMotor(float motorVoltage, float dz_correction) {
   ledcWrite(PWMpin, dutyCycle);
 }
 
-void POT::InitPotFunction(float first_Int, float second_Int, float thrid_Int, float fourth_Int){
+void POT::InitPotFunction(float fourth_Int, float thrid_Int, float second_Int, float first_Int){
     // Initialize the function values
     this->first = first_Int;
     this->second = second_Int;
@@ -90,5 +90,3 @@ float PIController::Update(float setpoint, float measurement) {
     // Return controller output
     return out;
 }
-
-
