@@ -9,7 +9,7 @@ class POT{
     // Controls the motor
     void setVoltageMotor(float motorVoltage, float dz_correction);
     // Define the values in the potentiometer function
-    void InitPotFunction(float first_Int, float second_Int, float thrid_Int, float fourth_Int);
+    void InitPotFunction(float fourth_Int, float thrid_Int, float second_Int, float first_Int);
     // Calculates position on the potentiometer fra voltage
     float VoltageToPosition(float voltage);
     // Read the potentiometer voltage
@@ -22,11 +22,11 @@ class POT{
     const int resolution = 8;
     int Potpin; // Potentiometer pin
     int enA; // Enable pin
-    int in1; // First input pin 
-    int in2; // Second input pin
+    int in1; // First servo track pin 
+    int in2; // Second servo track pin
     int PWMpin; // PWM pin
-    float first; // First servo track pin
-    float second; // Second servo track pin
+    float first; // First order function value
+    float second; // Second order function value
     float third; // Thrid order function value
     float fourth; // Fourth order function value
 };
