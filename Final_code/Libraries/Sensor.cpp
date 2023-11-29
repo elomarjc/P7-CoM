@@ -82,6 +82,18 @@ void Sensor::Calibrate_magnetometer(){
 	Serial.println("Calibration has been set");
 }
 
+// Calculate angle for heading, assuming board is parallel to the ground and +Y points towards heading
+  float Sensor::Heading(){
+    float heading = -1 * atan(magn_meas(0), magn_meas(1)) * 180 / PI;
+    // Apply magnetic declination to convert magnetic heading to geographic heading
+    heading += mag_dec1;
+    // Convert heading to 0...360 degrees
+    if(heading < 0){
+    heading += 360;
+  }
+  return heading;
+  }
+
 
 void Sensor::Update(){
 

@@ -45,6 +45,8 @@ class Sensor{
   // Computes soft and hard iron effects
   void Calibrate_magnetometer();
 
+  // Calculate angle for heading, assuming board is parallel to the ground
+  float Heading();
 
 
   // Prints to serial for Plotter to read directly. Requires line change as well
@@ -61,6 +63,9 @@ class Sensor{
 
 
   private:
+
+  // Magnetic Declination for Aalborg
+  float mag_dec1 = 4.11;
 
   MPU9250_asukiaaa gatherer;
   Filter accel_filter[3];
@@ -96,3 +101,4 @@ class Sensor{
 
 
 #endif
+
