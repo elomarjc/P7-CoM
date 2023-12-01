@@ -1,0 +1,27 @@
+clear all
+close
+x = serialport('COM5',115200,"StopBits",1,"Parity","none","DataBits",8,"FlowControl","none")
+
+accel = [0,0,0]';
+gyro = [0,0,0]';
+magn = [0,0,0]';
+
+while true
+    start = tic;
+    %a(n_comms+1) = typecast(uint8(fread(x,4)),'single');
+    if(x.NumBytesAvailable ~= 0)
+        read = fgets(x)   
+
+        json_struct = jsondecode(read)
+        accel = [accel,json_struct.accel];
+        gyro = [gyro,json_struct.gyro];
+        magn = [magn,json_struct.magn];
+    end
+    
+
+    %message = convertCharsToStrings(native2unicode(a))
+    %typecast(a,'single')
+    while(toc-start<1/20)
+    end
+end
+
