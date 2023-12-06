@@ -4,6 +4,7 @@
 using namespace BLA;
 #include <MPU9250_asukiaaa.h>
 #include "Filter.h"
+#include <math.h>
 
 extern float dt;
 class Sensor{
@@ -44,7 +45,7 @@ class Sensor{
 
   // Computes soft and hard iron effects
   void Calibrate_magnetometer();
-
+  void Calibrate_magnetometer(Matrix<3,1,float>& hard_iron, Matrix<3,1,float> soft_iron);
   // Calculate angle for heading, assuming board is parallel to the ground
   float Heading();
 

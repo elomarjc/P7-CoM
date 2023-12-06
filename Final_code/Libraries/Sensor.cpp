@@ -1,5 +1,6 @@
 #include "Sensor.h"
-#include "math.h"
+
+Matrix <3,1,float> Perpendicularize(Matrix <3,1,float> vec1,Matrix <3,1,float> vec2);
 
 void Sensor::Initialize(int pin_SDA,int pin_scl){
     // First, start the connection with the IMU, requires SDA and SCL pins
@@ -44,6 +45,11 @@ void Sensor::Initialize(int pin_SDA,int pin_scl){
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------------
 
+void Sensor::Calibrate_magnetometer(Matrix<3,1,float>& hard_iron, Matrix<3,1,float> soft_iron){
+  magn_hard_iron = hard_iron;
+	magn_soft_iron = soft_iron;
+}
+
 void Sensor::Calibrate_magnetometer(){
 	Serial.println("Starting calibration, move the device around all axis for at least 30 seconds");
   int test_duration_ms = 30000;
@@ -81,10 +87,11 @@ void Sensor::Calibrate_magnetometer(){
 	magn_hard_iron = {offset_x, offset_y, offset_z};
 	magn_soft_iron = {scale_x, scale_y, scale_z};
 	Serial.println("Calibration has been set");
+  Serial << "Hard iron effect: "<< magn_hard_iron <<"\nSoft iron effect:" << magn_soft_iron <<"\n";
 }
-
+/**
 // Calculate angle for heading, assuming board is parallel to the ground and +Y points towards heading
-float Sensor::Heading(){
+  float Sensor::Heading(){
     float heading = -1 * atan2(magn_meas(0), magn_meas(1)) * 180 / PI;
     // Apply magnetic declination to convert magnetic heading to geographic heading
     heading += mag_dec1;
@@ -94,15 +101,15 @@ float Sensor::Heading(){
   }
   return heading;
   }
-
+**/
 
 void Sensor::Update(){
 
   this->Update_Measurements();
   this->Offset_corrections();
   this->Filter_Measurements();
-  this->Compute_axis();
-  this->Compute_Euler_Angles();
+  //this->Compute_axis();
+  //this->Compute_Euler_Angles();
 }
 void Sensor::Compute_axis(){
   axis_x_mag = Normalize(magn_meas_filtered);
@@ -112,22 +119,36 @@ void Sensor::Compute_axis(){
 void Sensor::Offset_corrections(){
   accel_meas -= accel_offset;
   gyro_meas -= gyro_offset;
+  // Apply normalization filter
   magn_meas(0) = (magn_meas(0) - magn_hard_iron(0)) * magn_soft_iron(0);
   magn_meas(1) = (magn_meas(1) - magn_hard_iron(1)) * magn_soft_iron(1);
   magn_meas(2) = (magn_meas(2) - magn_hard_iron(2)) * magn_soft_iron(2);
-  //magn_meas = Normalize(magn_meas);
+  magn_meas = Normalize(magn_meas);
+  // And change x and y axis, because somehow they are shifted
+  float aux = magn_meas(0);
+  magn_meas(0) = magn_meas(1);
+  magn_meas(1) = aux;
+  magn_meas(2) = -magn_meas(2);
 }
+//
+Matrix <3,1,float> Perpendicularize(Matrix <3,1,float> vec1, Matrix <3,1,float> vec2){
+  Matrix<3,3,float> eye3_3 = {1,0,0,0,1,0,0,0,1};
+  vec1 = (eye3_3-vec2*(~vec2))*vec1;
+  return vec1;
+} 
+
+// ------------------------------------------------------------------------------------------------------------------------------------------------------
+
 void Sensor::Update_Measurements(){
+  static bool first = true; 
   if (gatherer.accelUpdate() == 0) {
     accel_meas = {gatherer.accelX(),gatherer.accelY(),gatherer.accelZ()};
-     
   }
   
 
   
   if (gatherer.gyroUpdate() == 0) {
     gyro_meas = {-gatherer.gyroX(),-gatherer.gyroY(),-gatherer.gyroZ()}; // Minus make it follow convention: angles increase counter clockwise
-    
   }
   
   if (gatherer.magUpdate() == 0) {
@@ -226,6 +247,8 @@ void Sensor::Filter_Measurements(){
   for(int i = 0; i < 3; i++){
       accel_meas_filtered(i) = accel_filter[i].Update(accel_meas(i));
   }
+  accel_meas_filtered = Normalize(accel_meas_filtered);
+  accel_meas_filtered = Normalize(accel_meas);
   gyro_meas_filtered = gyro_meas;
   magn_meas_filtered = magn_meas;
 }
