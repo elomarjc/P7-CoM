@@ -1,8 +1,10 @@
 #include "Sensor.h"
 
-void Sensor::Initialize(int pin_SDA,int pin_scl){
+void Sensor::Initialize(int pin_SDA, int pin_SCL){
     // First, start the connection with the IMU, requires SDA and SCL pins
-    Wire.begin(pin_SDA, pin_scl);  
+    Wire.begin();  
+    Wire.setSCL(pin_SCL);
+    Wire.setSDA(pin_SDA);
     gatherer.setWire(&Wire);
 
     // Initialize all 3 measurements
@@ -50,7 +52,7 @@ void Sensor::Calibrate_magnetometer(){
 	Serial.print("expected array size:");
   Serial.println(test_duration_ms / sample_delay);
 	float x_values[300], y_values[300], z_values[300];
-	unsigned int start_time = millis();
+//	unsigned int start_time = millis();
   for(int i = 0; i < test_duration_ms / sample_delay; i++)
 	{
     Update_Measurements();

@@ -34,7 +34,7 @@ class Sensor{
 
   // Funcitons ------------------------------------------------------------------------------
   // Must be executed in setup, connects to IMU and quickstarts it
-  void Initialize(int pin_SDA,int pin_scl);
+  void Initialize(int pin_SDA,int pin_SCL);
 
   // Updates the emasurements AND computes the euler angles
   void Update();

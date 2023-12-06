@@ -1,8 +1,7 @@
 #define SDA_PIN  0
 #define SCL_PIN  1
-#define PI 3.141592
-#define F 20
-float dt = 1.0/F;
+#define Freq 20   //change F in "FinalCode.ino" to Freq, so no calling problems with un-qualified ID's
+float dt = 1.0/Freq;
 #define MILLION pow(10,6)
 
 #include "Sensor.h"
@@ -50,8 +49,8 @@ double heading = -1 * atan2(sensor.magn_meas(0), sensor.magn_meas(1)) * 180 / PI
   Serial.println();
 
   // Time management
-  if(((float)(micros()-start))>1.0/F*MILLION){
+  if(((float)(micros()-start))>1.0/Freq*MILLION){
     Serial.println("TIME EXCEEEEEEEEEEEEEEEEEEEEEEEEEDED");
   }
-  while(((float)(micros()-start))<1.0/F*MILLION);
+  while(((float)(micros()-start))<1.0/Freq*MILLION);
 }
