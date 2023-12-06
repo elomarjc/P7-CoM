@@ -34,15 +34,24 @@ void POT::setVoltageMotor(float motorVoltage, float dz_correction) {
   ledcWrite(PWMpin, dutyCycle);
 }
 
+// Initialize the function values
 void POT::InitPotFunction(float fourth_Int, float thrid_Int, float second_Int, float first_Int){
-    // Initialize the function values
     this->first = first_Int;
     this->second = second_Int;
     this->third = thrid_Int;
     this->fourth = fourth_Int;
 }
+// Disable deadzone when close to goal
+float POT::DeadzoneDisable(float deadzone, float targetPosition){
+  if (abs(targetPosition - VoltageToPosition(PotVoltage())) <= 0.03) {
+    dz_correction = 0;
+  }else {
+    dz_correction = deadzone;
+  }
+  return dz_correction;
+}
 //Translate voltage to a position on the potentiometer
-float POT::VoltageToPosition(float voltage,){
+float POT::VoltageToPosition(float voltage){
     return fourth * voltage * voltage * voltage - third * voltage * voltage + second * voltage + first - 5;
 }
 

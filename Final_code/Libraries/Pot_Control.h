@@ -14,13 +14,15 @@ class POT{
     float VoltageToPosition(float voltage);
     // Read the potentiometer voltage
     float PotVoltage();
+    // Disables deadzone when close to the goal
+    float DeadzoneDisable(float deadzone, float targetPosition);
 
     private:
     // Variables
     const float minPotValue = 4095.0; // Minimum potentiometer value (leftmost)
     const int maxPotValue = 0; // Maximum potentiometer value (rightmost)
     const int resolution = 8;
-    int Potpin; // Potentiometer pin
+    int potPin; // Potentiometer pin
     int enA; // Enable pin
     int in1; // First servo track pin 
     int in2; // Second servo track pin
@@ -29,6 +31,7 @@ class POT{
     float second; // Second order function value
     float third; // Thrid order function value
     float fourth; // Fourth order function value
+    float dz_correction; // Placeholder for deadzone value
 };
 
 
