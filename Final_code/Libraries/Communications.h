@@ -1,20 +1,23 @@
 #ifndef COMMUNICATIONS
 #define COMMUNICATIONS
 #include <ArduinoJson.h>
-#include <HardwareSerial.h>
+
+//Declare in main: StaticJsonDocument<200> data_packet;
+
 
 class XBee{
     public:
-    StaticJsonDocument<200> data_packet;
-    // Must be executed in setup, initializes the XBee
+   // Must be executed in setup, initializes the XBee
     Initialize(int RX, int TX, int BaudRate);
 
-    Send_Packet();
+    Send_Packet(data_packet);
 
     private:
     // Variables
-    HardwareSerial XBEE_Serial(1);
-    static char serialised[200];
+	int RX;
+	int TX;
+	int baudRate;
+	static char serialised[200];
 };
 
 

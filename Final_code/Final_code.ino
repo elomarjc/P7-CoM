@@ -25,7 +25,7 @@ Sensor sensor; // Sensor data
 LKFType LKF; // Filter
 POT Pot[3]; // motor 1, motor 5, motor 6 in that order.
 PIController Controller[3]; // controller for motor 1, 5, and 6 in that order.
-
+StaticJsonDocument<200> data_packet;
 // Define Queues
 static QueueHandle_t Queue_Measurements;
 static QueueHandle_t Queue_MEKF;
