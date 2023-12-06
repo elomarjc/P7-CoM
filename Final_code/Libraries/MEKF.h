@@ -40,7 +40,7 @@ Matrix<3,1,float> MEKF_GET_rot_speed();
 
 Quaternion MEKF_GET_quaternion();
 
-void MEKF_Update(Matrix<3,1,float>& accel,Matrix<3,1,float>& gyro, Matrix<3,1,float>& mag,float dt);
+void MEKF_Update(Matrix<3,1,float>& accel,Matrix<3,1,float>& gyro, Matrix<3,1,float>& mag);
 
 void MEKF_Innit_dt(float dt);
 

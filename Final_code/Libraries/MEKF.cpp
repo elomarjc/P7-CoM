@@ -101,7 +101,7 @@ void MEKF_Innit_bias(Matrix<6,1,float>& b){
   Filter_settings.x(5) = b(5);
 }
 
-void MEKF_Update(Matrix<3,1,float>& accel,Matrix<3,1,float>& gyro, Matrix<3,1,float>& mag,float dt){
+void MEKF_Update(Matrix<3,1,float>& accel,Matrix<3,1,float>& gyro, Matrix<3,1,float>& mag){
     // Initialize filter
   static Matrix<6,1,float> x = Filter_settings.x;                         // x of kalman filter
   static RefMatrix<Matrix<6,1>,3,1> a(x.Submatrix<3,1>(0,0));
@@ -175,13 +175,13 @@ void MEKF_Update(Matrix<3,1,float>& accel,Matrix<3,1,float>& gyro, Matrix<3,1,fl
   
   //F_up_left = -skew3(w_est);                                          // Update Jacobian
   //x = F*x;                                                            // Update equation
-  static Matrix<6,6> eye_dt = {dt,0,0,0,0,0,0,dt,0,0,0,0,0,0,dt,0,0,0,0,0,0,dt,0,0,0,0,0,0,dt,0,0,0,0,0,0,dt};
+  static Matrix<6,6> eye_dt = {Filter_settings.dt,0,0,0,0,0,0,Filter_settings.dt,0,0,0,0,0,0,Filter_settings.dt,0,0,0,0,0,0,Filter_settings.dt,0,0,0,0,0,0,Filter_settings.dt,0,0,0,0,0,0,Filter_settings.dt};
   P = P + eye_dt*(F*P+ P*(~F) +  G*Q*(~G));                                           // Update the autocovariance matrix
   
   Quaternion q_w(w_est,0);                                            // Build rotation quaternion
   Matrix<4,1,float> q_vec =  {q_est.vec(0),q_est.vec(1),q_est.vec(2),q_est.scalar};
   Matrix<4,4,float> q_w_skew;
-  Matrix<4,4,float> aux = {1/2*dt,0,0,0,0,1/2*dt,0,0,0,0,1/2*dt,0,0,0,0,1/2*dt};
+  Matrix<4,4,float> aux = {1/2*Filter_settings.dt,0,0,0,0,1/2*Filter_settings.dt,0,0,0,0,1/2*Filter_settings.dt,0,0,0,0,1/2*Filter_settings.dt};
   q_w_skew = skew4(q_w);
   q_vec = q_vec+ aux*q_w_skew*q_vec;                                    // Update equation
   q_est = Quaternion(q_vec);
