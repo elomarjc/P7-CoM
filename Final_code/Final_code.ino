@@ -17,11 +17,7 @@ float dt = 1.0/F;
 #include "Sensor.h"
 #include "LKF.h"
 #include "Pot_Control.h"
-
-//OTA
-
-
-static const uint8_t msg_queue_len = 5;
+#include "Communications.h"
 
 long int start;
 
@@ -34,6 +30,10 @@ PIController Controller[3]; // controller for motor 1, 5, and 6 in that order.
 static QueueHandle_t Queue_Measurements;
 static QueueHandle_t Queue_MEKF;
 static QueueHandle_t Queue_Estimation;
+static QueueHandle_t Queue_Communications;
+
+static const uint8_t msg_queue_len = 5;
+
 
 // Data structures
 typedef struct {
@@ -90,9 +90,9 @@ void UpdateMeasurements(void *Parameters) {
       Serial.println("Data Queue full");
     }
     
-    //if (xQueueSend(Queue_Communication, (void *) &data, 10) != pdTRUE){
-    //  Serial.println("Data Queue full");
-    //}
+    if (xQueueSend(Queue_Communication, (void *) &data, 1) != pdTRUE){
+      Serial.println("Communication Queue full");
+    }
     vTaskDelay(1000 / portTICK_PERIOD_MS); // Use this for the frequency we want for the function
   }
 }
@@ -100,27 +100,7 @@ void UpdateMeasurements(void *Parameters) {
 void MEKF(void *Parameters) {
   while (1) {
    // Receive data from UpdateMeasurements
-    if (xQueueReceive(Queue_Measurements, (void *) &data, 0) == pdTRUE){
-    Serial.print("Measurements:");
-    Serial.print(",");
-    Serial.print(data.magnet.x);
-    Serial.print(",");
-    Serial.print(data.magnet.y);
-    Serial.print(",");
-    Serial.print(data.magnet.z);
-    Serial.print(",");
-    Serial.print(data.accel.x);
-    Serial.print(",");
-    Serial.print(data.accel.y);
-    Serial.print(",");
-    Serial.print(data.accel.z);
-    Serial.print(",");
-    Serial.print(data.gyro.x);
-    Serial.print(",");
-    Serial.print(data.gyro.y);
-    Serial.print(",");
-    Serial.println(data.gyro.z);
-    }
+    xQueueReceive(Queue_Measurements, (void *) &data, 0)
     //MEKF code here
     mekf_output.quaternion.w = data.magnet.x + data.accel.y;
     mekf_output.torque.x = data.magnet.x + data.gyro.z;
@@ -128,21 +108,26 @@ void MEKF(void *Parameters) {
     if(xQueueSend(Queue_MEKF, (void *) &mekf_output, 1) != pdTRUE){
     Serial.println("MEKF Queue full");
   }
+    if (xQueueSend(Queue_Communication, (void *) &mekf_output, 1) != pdTRUE){
+      Serial.println("Communication Queue full");
+    }
     vTaskDelay(1000/portTICK_PERIOD_MS);
   }
 }
 
 void Estimation(void *Parameters) {
  while (1) {
-    if (xQueueReceive(Queue_MEKF, (void *) &mekf_output, 0) == pdTRUE) {
-      Serial.print("Sent to Estimation:");
-      Serial.print(mekf_output.quaternion.w);
-      Serial.print(",");
-      Serial.println(mekf_output.torque.x);
-    }
+    xQueueReceive(Queue_MEKF, (void *) &mekf_output, 0)
+    //Estimation code here
+
+
+
     if(xQueueSend(Queue_Estimation, (void *) &estimation_output, 10) != pdTRUE){
     Serial.println("Estimation Queue full");
-  }
+   }
+     if (xQueueSend(Queue_Communication, (void *) &estimation_output, 1) != pdTRUE){
+      Serial.println("Communication Queue full");
+    }
     vTaskDelay(1000/portTICK_PERIOD_MS);
   }
 }
@@ -154,12 +139,7 @@ void Actuators(void *pvParameters) {
 
   while (1) {
     // Receive data from Estimation
-    if (xQueueReceive(Queue_Estimation, (void *) &estimation_output, 0) == pdTRUE) {
-      Serial.print("Sent to Actuators:");
-      Serial.print(mekf_output.quaternion.w);
-      Serial.print(",");
-      Serial.println(mekf_output.torque.x);
-    }
+    xQueueReceive(Queue_Estimation, (void *) &estimation_output, 0)
 
       // Reading the potentiometer and converting to position
       //input[0] = Pot[0].VoltageToPosition(Pot[0].PotVoltage());
@@ -179,17 +159,38 @@ void Actuators(void *pvParameters) {
     vTaskDelay(1000/portTICK_PERIOD_MS);  // Use this for the frequency you want for the function
   }
 }
-/*
+
 void Communication(void *pvParameters) {
   while (1) {
     // Receive data from all tasks
-    //xQueueReceive(Queue_Communication, &result_data, portMAX_DELAY);
+    xQueueReceive(Queue_Communication, (void *) &data, 0);
+    XBee.data_packet["Accelometer"][0] = data.accel.x;
+    XBee.data_packet["Accelometer"][1] = data.accel.y;
+    XBee.data_packet["Accelometer"][2] = data.accel.z;
+    XBee.data_packet["Gyroscope"][0] = data.gyro.x;
+    XBee.data_packet["Gyroscope"][1] = data.gyro.y;
+    XBee.data_packet["Gyroscope"][2] = data.gyro.z;
+    XBee.data_packet["Magnetometer"][0] = data.magnet.x;
+    XBee.data_packet["Magnetometer"][1] = data.magnet.y;
+    XBee.data_packet["Magnetometer"][2] = data.magnet.z;
 
-    // Send data to computer via WiFi
-    // ...
+    xQueueReceive(Queue_Communication, (void *) &mekf_output, 0);
+    XBee.data_packet["Quaternion"][0] = mekf_output.quaternion.w;
+    XBee.data_packet["Quaternion"][1] = mekf_output.quaternion.x;
+    XBee.data_packet["Quaternion"][2] = mekf_output.quaternion.y;
+    XBee.data_packet["Quaternion"][3] = mekf_output.quaternion.z;
+    XBee.data_packet["Torque"][0] = mekf_output.torque.x;
+    XBee.data_packet["Torque"][1] = mekf_output.torque.y;
+    XBee.data_packet["Torque"][2] = mekf_output.torque.z;
+
+    xQueueReceive(Queue_Communication, (void *) &estimation_output, 0);
+    XBee.data_packet["Pot position"][0] = estimation_output.position.x;
+    XBee.data_packet["Pot position"][1] = estimation_output.position.y;
+    XBee.data_packet["Pot position"][2] = estimation_output.position.z;
+    XBee.Send_Packet();
   }
 }
-*/
+
 void setup() {
   Serial.begin(115200);
   vTaskDelay(1000 / portTICK_PERIOD_MS);
@@ -205,11 +206,13 @@ void setup() {
   Pot[2].Initialize(POT_PIN[2], ENA[2], IN1[2], IN2[2], PWM[2]);
   Pot[2].InitPotFunction(0.814, 4.9125, 10.123, 0.9785);
   Controller[2].Initialize();*/
+  XBee.Initialize(18, 17, 115200);
 
   // Create Queues
   Queue_Measurements = xQueueCreate(msg_queue_len, sizeof(SensorData));
   Queue_MEKF = xQueueCreate(msg_queue_len, sizeof(MEKFOutput));
   Queue_Estimation = xQueueCreate(msg_queue_len, sizeof(EstimationOutput));
+  Queue_Communication = xQueueCreate(msg_queue_len, sizeof(SensorData));
 
   // Create tasks
   xTaskCreatePinnedToCore(UpdateMeasurements // The function attached
@@ -220,9 +223,9 @@ void setup() {
   , NULL //Task handle
   , 1); //Pinned Core
   xTaskCreatePinnedToCore(MEKF, "MEKF", 2048, NULL, 2, NULL, 1);
-  xTaskCreatePinnedToCore(Estimation, "Estimation", 2048, NULL, 2, NULL, 1);
-  xTaskCreatePinnedToCore(Actuators, "Actuators", 2048, NULL, 2, NULL, 1);
-  //xTaskCreatePinnedToCore(Communication, "Communication", 1024, NULL, 0, NULL, 1);
+  xTaskCreatePinnedToCore(Estimation, "Estimation", 2048, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(Actuators, "Actuators", 2048, NULL, 1, NULL, 1);
+  xTaskCreatePinnedToCore(Communication, "Communication", 2048, NULL, 0, NULL, 1);
 
   //sensor.Calibrate_magnetometer();
 
