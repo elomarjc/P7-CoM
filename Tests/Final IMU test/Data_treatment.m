@@ -24,7 +24,7 @@ title("Accelerometer data");
 legend("X-axis","Y-axis","Z-axis")
 grid on;
 
-ylabel("Normalised data");
+ylabel("data[N]");
 xlabel("Time [s]");
 %% Gyroscope calibration
 disp("Gyroscope:");
@@ -53,5 +53,5 @@ plot(T,Mag);
 title("Magnetometer");
 legend("X-axis","Y-axis","Z-axis");
 grid on;
-ylabel("data []");
+ylabel("data [uT]");
 xlabel("Time [s]");
